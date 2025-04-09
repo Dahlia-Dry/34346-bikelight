@@ -2,6 +2,16 @@
 #define ACCELEROMETER_H
 #include <Arduino.h>
 
-bool check_moving();
+class accelerometer
+{
+private:
+    MPU6050 mpu;
+
+public:
+    accelerometer(/* args */);
+    ~accelerometer();
+    bool initialize();
+    bool check_moving();
+};
 
 #endif // ACCELEROMETER_H
