@@ -1,11 +1,22 @@
-#include "battery.h"
+#include "Battery.h"
 
-byte bytemsg = 0x00;
+void Battery::setup() {
+    Serial.begin(115200);
 
-void setup_battery(){
-  while (!maxlipo.begin()) {
-    Serial.println(F("Couldnt find Adafruit MAX17048?\nMake sure a battery is plugged in!"));
-  }
-  maxlipo.setAlertVoltages(3.3, 4.2); //Figure out what the drop out voltage should
-  maxlipo.setResetVoltage(3.3);
+    while (!maxlipo.begin()) {
+        Serial.println(F("Couldn't find Adafruit MAX17048? Make sure a battery is plugged in!"));
+        delay(1000);
+    }
+
+    maxlipo.setAlertVoltages(3.3, 4.2);
+    maxlipo.setResetVoltage(3.3);
+}
+
+char Battery::getBatteryPercent() {
+    float percent = maxlipo.cellPercent();
+
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+
+    return static_cast<char>(round(percent));  // char in 0–100 range
 }
