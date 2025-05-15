@@ -2,8 +2,8 @@
 #define LORA_CONFIG_H
 
 #include "Arduino.h"
-#include <LoRaWan_APP.h>
 #include <WiFi.h>
+#include "LoRaWan_APP.h"
 
 /* OTAA para */
 extern uint8_t devEui[];
@@ -31,12 +31,12 @@ extern uint8_t appData[];
 #define NO_MAX_WIFI_NODES       (uint8_t)(5)
 
 /* function declarations */
-void prepareTxFrame(uint8_t, const String);
+void prepareWifiTxFrame(uint8_t, const String);
 bool isUAA(String);
 char hex_char_to_bin(char);
 char str_to_hex_to_dec(char);
 String collect_wifi_data(void);
-void lora_send_once(void);
+void lora_send(char status, char percentage);
 
 #endif
 
