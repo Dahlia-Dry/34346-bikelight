@@ -6,7 +6,10 @@
 class LightArray {
 public:
     explicit LightArray(uint8_t indicatorPin);
-    void setupLights();
+    void setup();
+    void on();
+    void off();
+    void toggle();
     void showUnlockLight();
     void showLockLight();
     void showDeniedLight();

@@ -7,6 +7,8 @@
 
 class Accelerometer {
 public:
+    Accelerometer(int SDA, int SCL);
+    ~Accelerometer();
     void setup();
     bool isMoving();
 

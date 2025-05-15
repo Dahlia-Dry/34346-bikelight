@@ -2,9 +2,21 @@
 
 LightArray::LightArray(uint8_t indicatorPin) : _indicatorPin(indicatorPin) {}
 
-void LightArray::setupLights() {
+void LightArray::setup() {
     pinMode(_indicatorPin, OUTPUT);
     digitalWrite(_indicatorPin, LOW);
+}
+
+void LightArray::on(){
+  digitalWrite(_indicatorPin, HIGH);
+}
+
+void LightArray::off(){
+  digitalWrite(_indicatorPin, LOW);
+}
+
+void LightArray::toggle(){
+  digitalWrite(_indicatorPin, !digitalRead(_indicatorPin));
 }
 
 void LightArray::flash(int times, int onDuration, int offDuration) {

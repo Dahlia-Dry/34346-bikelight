@@ -120,57 +120,55 @@ String collect_wifi_data(void) {
     return ret;
 }
 
-void lora_send(char status, char percentage){
-  switch(deviceState)
-  {
-    case DEVICE_STATE_INIT:
-    {
-      #if(LORAWAN_DEVEUI_AUTO)
-        LoRaWAN.generateDeveuiByChipID();
-      #endif
-      LoRaWAN.init(loraWanClass,loraWanRegion);
-      //both set join DR and DR when ADR off 
-      LoRaWAN.setDefaultDR(3);
-      break;
-    }
-    case DEVICE_STATE_JOIN:
-    {
-      LoRaWAN.join();
-      break;
-    }
-    case DEVICE_STATE_SEND:
-    {
-      String wifinodes = "";
-      //char status = 1;
-      //char percentage = 100;
-      wifinodes += status;
-      wifinodes += percentage;
-      wifinodes+= collect_wifi_data();
-      //Serial.println(wifinodes);
+void lora_send(char status, char percentage) {
+    switch (deviceState) {
+          case DEVICE_STATE_INIT:
+          {
+              #if(LORAWAN_DEVEUI_AUTO)
+                  LoRaWAN.generateDeveuiByChipID();
+              #endif
+              LoRaWAN.init(loraWanClass, loraWanRegion);
+              LoRaWAN.setDefaultDR(3);
+              deviceState = DEVICE_STATE_JOIN; // advance to next state
+              break;
+          }
+          case DEVICE_STATE_JOIN:
+          {
+              LoRaWAN.join();
+              deviceState = DEVICE_STATE_SEND; // advance to next state
+              break;
+          }
+          case DEVICE_STATE_SEND:
+          {
+              String wifinodes = "";
+              wifinodes += status;
+              wifinodes += percentage;
+              wifinodes += collect_wifi_data();
 
-      prepareWifiTxFrame(appPort, wifinodes);
-      LoRaWAN.send();
-      deviceState = DEVICE_STATE_CYCLE;
-      //break;
-      return;
-    }
-    case DEVICE_STATE_CYCLE:
-    {
-      // Schedule next packet transmission
-      txDutyCycleTime = appTxDutyCycle + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
-      LoRaWAN.cycle(txDutyCycleTime);
-      deviceState = DEVICE_STATE_SLEEP;
-      break;
-    }
-    case DEVICE_STATE_SLEEP:
-    {
-      LoRaWAN.sleep(loraWanClass);
-      break;
-    }
-    default:
-    {
-      deviceState = DEVICE_STATE_INIT;
-      break;
-    }
-  }
+              prepareWifiTxFrame(appPort, wifinodes);
+              LoRaWAN.send();
+              deviceState = DEVICE_STATE_CYCLE;
+              return;
+              //break;
+          }
+          case DEVICE_STATE_CYCLE:
+          {
+              txDutyCycleTime = appTxDutyCycle + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
+              LoRaWAN.cycle(txDutyCycleTime);
+              deviceState = DEVICE_STATE_SLEEP;
+              break;
+          }
+          case DEVICE_STATE_SLEEP:
+          {
+              LoRaWAN.sleep(loraWanClass);
+              // End of cycle reached, return from function
+              //return;
+              break;
+          }
+          default:
+          {
+              deviceState = DEVICE_STATE_INIT;
+              break;
+          }
+      }
 }
