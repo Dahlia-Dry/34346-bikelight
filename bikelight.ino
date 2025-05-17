@@ -18,7 +18,6 @@ const int SDA_PIN = 19;
 const int SCL_PIN = 18;
 
 //status definitions
-char status = 0;
 char percentage = 0;
 bool isMoving = false;
 int light_val = 1000; //set light level for turn on/off (outside lvl: ~3300)
@@ -28,6 +27,8 @@ volatile bool motionDetected = false;
 volatile bool buttonPressed = false;
 bool keyMatch = false;
 bool detectCard = false;
+bool interruptTriggered = false;
+RTC_DATA_ATTR char status = 0;
 
 //object definitions
 Accelerometer accel(SDA_PIN,SCL_PIN);
@@ -48,42 +49,7 @@ int light_threshold = 1000;
 // Interrupts
 
 void IRAM_ATTR onInterrupt(){
-  isMoving = accel.isMoving();
-  detectCard = rfid.detectCard();
-  if(isMoving){
-    lastMotionTime = millis();
-    if (isLocked) {
-      status = MODE_ALARM;
-      Serial.println("Locked bike was moved! Alarm ON.");
-    }
-    else if (!isLocked && status == MODE_PARKED && light_val < light_threshold) {
-      lights.on();
-      status = MODE_ACTIVE;
-      Serial.println("Motion detected at night - ACTIVE mode.");
-    }
-  }
-  if(detectCard){
-    keyMatch = rfid.checkAccess(RFID_UID_Code,RFID_UID_Code1);
-    if(isLocked){
-      if(keyMatch){
-        lights.showUnlockLight();
-      }
-      else{
-        lights.showDeniedLight();
-      }
-    }
-    else{
-      if(keyMatch){
-        lights.showLockLight();
-      }
-      else{
-        lights.showDeniedLight();
-      }
-    }
-  }
-  if (!isMoving && !detectCard){ //is button
-    lights.toggle();
-  }
+  interruptTriggered = true;
 }
 
 void setup() {
@@ -106,6 +72,46 @@ void setup() {
 }
 
 void loop() {
+  //handle interrupt
+  if (interruptTriggered){
+    interruptTriggered=false;
+    isMoving = accel.isMoving();
+    detectCard = rfid.detectCard();
+    if(isMoving){
+      lastMotionTime = millis();
+      if (isLocked) {
+        status = MODE_ALARM;
+        Serial.println("Locked bike was moved! Alarm ON.");
+      }
+      else if (!isLocked && status == MODE_PARKED && light_val < light_threshold) {
+        lights.on();
+        status = MODE_ACTIVE;
+        Serial.println("Motion detected at night - ACTIVE mode.");
+      }
+    }
+    if(detectCard){
+      keyMatch = rfid.checkAccess(RFID_UID_Code,RFID_UID_Code1);
+      if(isLocked){
+        if(keyMatch){
+          lights.showUnlockLight();
+        }
+        else{
+          lights.showDeniedLight();
+        }
+      }
+      else{
+        if(keyMatch){
+          lights.showLockLight();
+        }
+        else{
+          lights.showDeniedLight();
+        }
+      }
+    }
+    if (!isMoving && !detectCard){ //is button
+      lights.toggle();
+    }
+  }
     // --- Sleep in Storage Mode ---
   if (status == MODE_PARKED && !isMoving) {
     Serial.println("Entering deep sleep mode");
