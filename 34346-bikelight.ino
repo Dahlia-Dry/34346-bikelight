@@ -58,6 +58,7 @@ RFIDReader rfid(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN, RST_PIN);
 // Interrupts
 
 void IRAM_ATTR onInterrupt(){
+  Serial.println("INTERRUPT TRIGGERED");
   interruptTriggered = true;
 }
 
@@ -66,10 +67,10 @@ void setup() {
   Mcu.begin(HELTEC_BOARD,SLOW_CLK_TPYE);
   
   //battery setup
-  //battery.setup();
+  battery.setup();
 
   //accelerometer setup
-  accel.setup();
+  //accel.setup();
 
   //buzzer setup
   pinMode(buzzer, OUTPUT);
@@ -84,7 +85,8 @@ void loop() {
   //handle interrupt
   if (interruptTriggered){
     interruptTriggered=false;
-    isMoving = accel.isMoving();
+    //isMoving = accel.isMoving();
+    isMoving = true;
     detectCard = rfid.detectCard();
     if(isMoving){
       lastMotionTime = millis();

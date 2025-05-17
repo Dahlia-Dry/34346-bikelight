@@ -87,7 +87,7 @@ void prepareWifiTxFrame(uint8_t port, const String txFrame) {
       appData[j] = (hex_char_to_bin(txFrame[i]) << 4) | hex_char_to_bin(txFrame[i+1]);
   }
   appDataSize = j;
-  Serial.println(appDataSize);
+  //Serial.println(appDataSize);
 }
 
 
@@ -129,13 +129,13 @@ void lora_send(char status, char percentage) {
               #endif
               LoRaWAN.init(loraWanClass, loraWanRegion);
               LoRaWAN.setDefaultDR(3);
-              deviceState = DEVICE_STATE_JOIN; // advance to next state
+              //deviceState = DEVICE_STATE_JOIN; // advance to next state
               break;
           }
           case DEVICE_STATE_JOIN:
           {
               LoRaWAN.join();
-              deviceState = DEVICE_STATE_SEND; // advance to next state
+              //deviceState = DEVICE_STATE_SEND; // advance to next state
               break;
           }
           case DEVICE_STATE_SEND:
