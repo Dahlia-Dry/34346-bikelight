@@ -1,14 +1,27 @@
-#include "LoraConfig.h"
-#include "Battery.h"
-#include "Accelerometer.h"
-#include "RFIDReader.h"
-#include "LightArray.h"
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 2
+* Main code for Heltec HT-CT62 development board
+*/
+
+//include libraries
+#include "LoraConfig.h" //functions for LoRa communication - change OTAA/ABP parameters in LoraConfig.cpp
+#include "Battery.h" //functions for MAX17048 battery gauge
+#include "Accelerometer.h" //functions for MPU6050 accelerometer
+#include "RFIDReader.h" //functions for RC522 RFID reader
+#include "LightArray.h" //functions for LED array
+
+//editable parameters
+String RFID_UID_Code = "31 95 FF 4C";     //set RFID_UID_Code as "3195ff4c" - use your card number here to gain access
+String RFID_UID_Code1 = "46 41 B2 04";    //set RFID_UID_Code1 as "5641b204" - use your card number here to gain access
+int light_threshold = 1000; //edit daylight threshold for light turn on/off
 
 //pin definitions
-const int interruptPin = 9;
+const int interruptPin = 9; //accelerometer, RFID scanner, and button share same interrupt pin
 const int buzzer = 2;
 const int ldr = 2;
-const int indicator_led = 21;
+const int indicator_led = 21; //indicator LED is same as LED array
 const int SS_PIN = 20;    
 const int RST_PIN = 5;  
 const int SCK_PIN = 10; 
@@ -17,29 +30,25 @@ const int MOSI_PIN = 7;
 const int SDA_PIN = 19;
 const int SCL_PIN = 18;
 
-//status definitions
-char percentage = 0;
-bool isMoving = false;
+//variable definitions
+char percentage = 0; //battery percentage
 int light_val = 1000; //set light level for turn on/off (outside lvl: ~3300)
 unsigned long lastMotionTime = 0;
 bool isLocked = false;
 volatile bool motionDetected = false;
 volatile bool buttonPressed = false;
+bool isMoving = false;
 bool keyMatch = false;
 bool detectCard = false;
 bool interruptTriggered = false;
-RTC_DATA_ATTR char status = 0;
+
+RTC_DATA_ATTR char status = 0; //set status as RTC_DATA_ATTR so it is saved after reset
 
 //object definitions
 Accelerometer accel(SDA_PIN,SCL_PIN);
 Battery battery;
 LightArray lights(15);
 RFIDReader rfid(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN, RST_PIN);
-
-//additional parameters
-String RFID_UID_Code = "31 95 FF 4C";     //set RFID_UID_Code as "3195ff4c" - use your card number here to gain access
-String RFID_UID_Code1 = "46 41 B2 04";    //set RFID_UID_Code1 as "5641b204" - use your card number here to gain access
-int light_threshold = 1000;
 
 // --- Operation Modes ---
 #define MODE_PARKED  1
@@ -126,7 +135,7 @@ void loop() {
 
     // --- Active Mode ---
     if (status == MODE_ACTIVE) {
-      if (millis() - lastMotionTime > 30000) {
+      if (millis() - lastMotionTime > 30000) { //auto turn off if not moved in 30 seconds
         status = MODE_PARKED;
         Serial.println("No motion, switching to PARKED mode.");
       }
