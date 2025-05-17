@@ -1,4 +1,4 @@
-# Beam Buddy : IoT-Enabled Smart Bike Light
+# Beam Buddy : IoT-Enabled Smart Bike Light
 
 Bike lights are a critical safety component for any cyclist, but they are often unreliable (run out of battery), easily stolen, or easy to forget. In this report, we present a solution to these problems in the form of an IoT-enabled smart bike light. The bike light consists of both a front and rear light using a Heltec HT-CT62 as the MCU, with LoRaWAN connectivity via The Things Network enabling a web-based user interface which displays geolocation, battery level, and operational status. It turns on automatically with movement and functions additionally as a theft alarm by using an RFID card to lock/unlock the device when parked. It also features solar charging and is designed with a focus on maximizing battery life, with an audible warning for low battery included. All of these features combine to make both the user and their bike safer, day and night.
 
