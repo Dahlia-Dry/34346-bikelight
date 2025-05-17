@@ -120,6 +120,7 @@ void loop() {
   }
 
   else{
+    // if not sleep mode, collect new inputs and send Lora update
     percentage = battery.getBatteryPercent();
     light_val = analogRead(ldr);
 
