@@ -23,13 +23,13 @@ void Accelerometer::setup() {
     Serial.println("MPU6050 Found!");
 
     mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-    mpu.setMotionDetectionThreshold(3);
-    mpu.setMotionDetectionDuration(20);
-    mpu.setInterruptPinLatch(true);
-    mpu.setInterruptPinPolarity(true);
-    mpu.setMotionInterrupt(true);
+    mpu.setMotionDetectionThreshold(30);    // LSB = 2mg of force
+    mpu.setMotionDetectionDuration(100);    // LSB = 1ms of continous force
+    mpu.setInterruptPinPolarity(true);      // True for active-low
+    mpu.setInterruptPinLatch(true);         // Keep low until cleared
+    mpu.setMotionInterrupt(true);           // Set motion interrupt
 
-    delay(100);
+    delay(100);                             // Let I2C send commands
 }
 
 bool Accelerometer::isMoving() {
