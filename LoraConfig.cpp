@@ -4,6 +4,8 @@
 #include <fstream>
 using namespace std;
 
+#define INT_PIN 3
+
 uint8_t devEui[] = { 0x00, 0x04, 0xA3, 0x0B, 0x01, 0x06, 0x8C, 0xD7 };
 uint8_t appEui[] = {0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x07, 0x01, 0x2B};
 uint8_t appKey[] = { 0xA7, 0x82, 0x2A, 0xF3, 0x38, 0xBE, 0x81, 0x67, 0xFC, 0x2B, 0xB0, 0x99, 0x24, 0x23, 0x02, 0x10};
@@ -160,6 +162,7 @@ void lora_send(char status, char percentage) {
           }
           case DEVICE_STATE_SLEEP:
           {
+              esp_deep_sleep_enable_gpio_wakeup(1<<INT_PIN,ESP_GPIO_WAKEUP_GPIO_LOW);
               LoRaWAN.sleep(loraWanClass);
               // End of cycle reached, return from function
               //return;
@@ -171,4 +174,17 @@ void lora_send(char status, char percentage) {
               break;
           }
       }
+}
+
+void downLinkDataHandle(McpsIndication_t *mcpsIndication)
+{
+  Serial.printf("+REV DATA:%s,RXSIZE %d,PORT %d\r\n",mcpsIndication->RxSlot?"RXWIN2":"RXWIN1",mcpsIndication->BufferSize,mcpsIndication->Port);
+  Serial.print("+REV DATA:");
+  for(uint8_t i=0;i<mcpsIndication->BufferSize;i++)
+  {
+    Serial.printf("%02X",mcpsIndication->Buffer[i]);
+  }
+  Serial.println();
+  uint8_t status=mcpsIndication->Buffer[0];
+  Serial.println(status);
 }

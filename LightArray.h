@@ -16,6 +16,7 @@ public:
 
 private:
     uint8_t _indicatorPin;
+    bool _indicatorStatus;
     void flash(int times, int onDuration, int offDuration);
 };
 

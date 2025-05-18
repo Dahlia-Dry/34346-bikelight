@@ -7,7 +7,7 @@ void Battery::setup() {
         Serial.println(F("Couldn't find Adafruit MAX17048? Make sure a battery is plugged in!"));
         delay(1000);
     }
-
+    Serial.println("Found MAX17048");
     maxlipo.setAlertVoltages(3.3, 4.2);
     maxlipo.setResetVoltage(3.3);
 }

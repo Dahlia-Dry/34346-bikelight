@@ -1,3 +1,4 @@
+#include "esp32-hal-gpio.h"
 #include "LightArray.h"
 
 LightArray::LightArray(uint8_t indicatorPin) : _indicatorPin(indicatorPin) {}
@@ -5,6 +6,7 @@ LightArray::LightArray(uint8_t indicatorPin) : _indicatorPin(indicatorPin) {}
 void LightArray::setup() {
     pinMode(_indicatorPin, OUTPUT);
     digitalWrite(_indicatorPin, LOW);
+    _indicatorStatus = 0;
 }
 
 void LightArray::on(){
