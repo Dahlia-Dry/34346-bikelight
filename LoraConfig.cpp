@@ -17,10 +17,10 @@ uint32_t devAddr =  (uint32_t)0x007e6ae1;
 uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 DeviceClass_t loraWanClass = CLASS_A;
-uint32_t appTxDutyCycle = 15000;
+uint32_t appTxDutyCycle = 30000;
 bool overTheAirActivation = true;
 bool loraWanAdr = true;
-bool isTxConfirmed = true;
+bool isTxConfirmed = false;
 uint8_t appPort = 6;
 uint8_t confirmedNbTrials = 4;
 
@@ -186,5 +186,7 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
   }
   Serial.println();
   uint8_t status=mcpsIndication->Buffer[0];
-  Serial.println(status);
+  char status_msg[5];
+  itoa(status, status_msg, 10);
+  Serial.println(status_msg);
 }

@@ -9,6 +9,7 @@ void RFIDReader::setup() {
     mfrc522.PCD_Reset();
     mfrc522.PCD_Init();
 
+    Serial.begin(115200);
     Serial.println("RFID Access Control System initialized");
     Serial.println("Ready to read card\n");
 }

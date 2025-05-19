@@ -5,6 +5,21 @@
 * Main code for Heltec HT-CT62 development board
 */
 
+//debug statements
+#define DEBUG 0    // SET TO 0 OUT TO REMOVE TRACES
+
+#if DEBUG
+#define D_SerialBegin(...) Serial.begin(__VA_ARGS__);
+#define D_print(...)    Serial.print(__VA_ARGS__)
+#define D_write(...)    Serial.write(__VA_ARGS__)
+#define D_println(...)  Serial.println(__VA_ARGS__)
+#else
+#define D_SerialBegin(...)
+#define D_print(...)
+#define D_write(...)
+#define D_println(...)
+#endif
+
 //include libraries
 #include "LoraConfig.h" //functions for LoRa communication - change OTAA/ABP parameters in LoraConfig.cpp
 #include "Battery.h" //functions for MAX17048 battery gauge
@@ -39,6 +54,7 @@ bool isMoving = false; //true if accelerometer triggers interrupt due to movemen
 bool keyMatch = false; //true if RFID card matches RFID_UID_Code or RFID_UID_Code1
 bool detectCard = false; //true if RFID module triggers interrupt due to card being scanned
 bool interruptTriggered = false;
+bool overwrite = false;
 RTC_DATA_ATTR char status = 0; //set status as RTC_DATA_ATTR so it is saved after reset
 
 //object definitions
@@ -53,20 +69,15 @@ RFIDReader rfid(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN, RST_PIN);
 #define MODE_ACTIVE  2
 #define MODE_ALARM   3
 
-#define DEBUG // Uncomment to enable debug messages
-
 // interrupt can be triggered by accelerometer, RFID scanner, or button
 void IRAM_ATTR onInterrupt(){
-  #ifdef DEBUG
-  Serial.println("INTERRUPT TRIGGERED");
-  #endif
+  D_println("INTERRUPT TRIGGERED");
   interruptTriggered = true;
 }
 
 void setup() {
-  #ifdef DEBUG
-  Serial.begin(115200); //print to serial monitor if in debug mode
-  #endif
+  
+  D_SerialBegin(115200); //print to serial monitor if in debug mode
 
   Mcu.begin(HELTEC_BOARD,SLOW_CLK_TPYE); //initialized heltec board
 
@@ -86,11 +97,13 @@ void setup() {
   pinMode(ldr, INPUT);
 
   //lights
-  //Serial.end();
-  //lights.setup();
-  //lights.on();
+  #if !DEBUG
+  Serial.end();
+  lights.setup();
+  lights.off();
+  #endif
 
-  status = MODE_PARKED; //set initial status to PARKED
+  status = MODE_ACTIVE; //set initial status to PARKED
 
   attachInterrupt(digitalPinToInterrupt(interruptPin), onInterrupt, FALLING); //attach interrupt to pin 9
 }
@@ -103,104 +116,123 @@ void loop() {
     detectCard = rfid.detectCard(); //check if RFID scanner triggered interrupt (card detected)
     if(isMoving){ //accelerometer triggered interrupt
       lastMotionTime = millis();
+      pinMode(ldr, INPUT);
       light_val = analogRead(ldr); //read ambient light value from ldr
-      #ifdef DEBUG
-      Serial.println("Movement");
-      Serial.println(light_val);
-      #endif
+      
+      D_println("Movement");
+      D_println(light_val);
+      
       if (isLocked) { //trigger alarm if bike is locked and moved
         status = MODE_ALARM;
-        #ifdef DEBUG
-        Serial.println("Locked bike was moved! Alarm ON.");
-        #endif
+        
+        D_println("Locked bike was moved! Alarm ON.");
+        
       }
       else{ //if bike is not locked, mode is ACTIVE
         status = MODE_ACTIVE;
-        #ifdef DEBUG
-        Serial.println("Motion detected - ACTIVE mode.");
-        #endif
+        
+        D_println("Motion detected - ACTIVE mode.");
+        
       }
     }
     if(detectCard){ //RFID scanner triggered interrupt
-      #ifdef DEBUG
-      Serial.println("Card");
-      #endif
+      
+      D_println("Card");
+      
       keyMatch = rfid.checkAccess(RFID_UID_Code,RFID_UID_Code1);
       if(isLocked){
         if(keyMatch){
+          pinMode(indicator_led, OUTPUT);
           lights.showUnlockLight();
         }
         else{
+          pinMode(indicator_led, OUTPUT);
           lights.showDeniedLight();
         }
       }
       else{
         if(keyMatch){
+          pinMode(indicator_led, OUTPUT);
           lights.showLockLight();
         }
         else{
+          pinMode(indicator_led, OUTPUT);
           lights.showDeniedLight();
         }
       }
     }
     delay(10); // Let IRQ line settle before checking if it is button
     if (!isMoving && !detectCard && !(digitalRead(interruptPin))) { //button triggered interrupt
-      #ifdef DEBUG
-      Serial.println("Button");
-      #endif
+      
+      D_println("Button");
+      status = MODE_ACTIVE;
+      overwrite = true;
+      lastMotionTime = millis();
+      pinMode(indicator_led, OUTPUT);
       lights.toggle(); //turn lights on/off with button press
     }
   }
 
   //next, check if device should go to sleep 
   if ((status == MODE_PARKED && !isMoving) || (status == MODE_STORAGE)) {
-    #ifdef DEBUG
-    Serial.println("Entering deep sleep mode");
-    #endif
-    delay(1000);
+    
+    //D_println("Sleep");
+    
+    delay(10);
     //esp_deep_sleep_start();
   }
 
   //if not sleep mode, collect+send updated status data via LoRa
-  else{
-    if (status == MODE_ACTIVE) { //if bike is in active mode, check if it is still moving
-      delay(50);
-      Serial.println(millis() - lastMotionTime);
-      if (millis() - lastMotionTime > 30000) { //auto turn off if not moved in 30 seconds
-        status = MODE_PARKED;
-        isMoving = false;
+  if (status == MODE_ACTIVE) { //if bike is in active mode, check if it is still moving
+    //delay(50);
+    D_println(millis() - lastMotionTime);
+    if (millis() - lastMotionTime > 30000) { //auto turn off if not moved in 30 seconds
+      status = MODE_PARKED;
+      isMoving = false;
+      overwrite = false;
+      pinMode(indicator_led, OUTPUT);
+      lights.off();
+      
+      D_println("No motion, switching to PARKED mode.");
+      
+    }
+    else if (overwrite == true) {
+      // Bypass checking lights and changing it.
+    }
+
+    else{ //if bike is still moving, turn on/off lights on if it is dark
+      pinMode(ldr, INPUT);  // Change to input in case buzzer is output
+      if (analogRead(ldr) < light_threshold){
+        pinMode(indicator_led, OUTPUT);
+        lights.on();
+      }
+      else{ //turn lights off if daylight to save power
+        pinMode(indicator_led, OUTPUT);
         lights.off();
-        #ifdef DEBUG
-        Serial.println("No motion, switching to PARKED mode.");
-        #endif
-      }
-      else{ //if bike is still moving, turn on/off lights on if it is dark
-        if (analogRead(ldr) < light_threshold){
-          lights.on();
-        }
-        else{ //turn lights off if daylight to save power
-          lights.off();
-        }
       }
     }
-    //if alarm activated, activate buzzer
-    if (status == MODE_ALARM) {
-      tone(buzzer, 1000);
-    } 
-    else {
-      noTone(buzzer);
-    }
-
-    // if battery percentage is low, activate buzzer
-    if (percentage < 20) {
-      tone(buzzer, 2000, 200);
-    }
-
-    percentage = battery.getBatteryPercent(); //get battery percentage
-    // --- Lora Send ---
-    //lora_send(status, percentage);
-
-    //delay(100);
-
   }
+  //if alarm activated, activate buzzer
+  if (status == MODE_ALARM) {
+    pinMode(buzzer, OUTPUT);
+    tone(buzzer, 1000);
+  } 
+  else {
+    pinMode(buzzer, OUTPUT);
+    noTone(buzzer);
+  }
+
+  // if battery percentage is low, activate buzzer
+  if (percentage < 20) {
+    pinMode(buzzer, OUTPUT);
+    tone(buzzer, 2000, 200);
+  }
+
+  // Keep the indiciator led as output, HT-CT62 might be fiddling with this
+  pinMode(indicator_led, OUTPUT);
+
+  percentage = battery.getBatteryPercent(); //get battery percentage
+  // --- Lora Send ---
+  delay(10);
+  lora_send(status, percentage);
 }
