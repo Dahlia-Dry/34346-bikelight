@@ -34,14 +34,11 @@ const int SCL_PIN = 18;
 char percentage = 0; //battery percentage
 int light_val = 1000; //set light level for turn on/off (outside lvl: ~3300)
 unsigned long lastMotionTime = 0;
-bool isLocked = false;
-volatile bool motionDetected = false;
-volatile bool buttonPressed = false;
-bool isMoving = false;
-bool keyMatch = false;
-bool detectCard = false;
+bool isLocked = false; //true if device is in "locked" state
+bool isMoving = false; //true if accelerometer triggers interrupt due to movement detected
+bool keyMatch = false; //true if RFID card matches RFID_UID_Code or RFID_UID_Code1
+bool detectCard = false; //true if RFID module triggers interrupt due to card being scanned
 bool interruptTriggered = false;
-
 RTC_DATA_ATTR char status = 0; //set status as RTC_DATA_ATTR so it is saved after reset
 
 //object definitions
@@ -50,15 +47,15 @@ Battery battery;
 LightArray lights(indicator_led);
 RFIDReader rfid(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN, RST_PIN);
 
-// --- Operation Modes ---
+//operation modes
+#define MODE_STORAGE 0
 #define MODE_PARKED  1
 #define MODE_ACTIVE  2
 #define MODE_ALARM   3
 
-#define DEBUG
+#define DEBUG // Uncomment to enable debug messages
 
-// Interrupts
-
+// interrupt can be triggered by accelerometer, RFID scanner, or button
 void IRAM_ATTR onInterrupt(){
   #ifdef DEBUG
   Serial.println("INTERRUPT TRIGGERED");
@@ -68,9 +65,10 @@ void IRAM_ATTR onInterrupt(){
 
 void setup() {
   #ifdef DEBUG
-  Serial.begin(115200);
+  Serial.begin(115200); //print to serial monitor if in debug mode
   #endif
-  Mcu.begin(HELTEC_BOARD,SLOW_CLK_TPYE);
+
+  Mcu.begin(HELTEC_BOARD,SLOW_CLK_TPYE); //initialized heltec board
 
   // Wait 5 seconds to allow Accel to be inserted (workaround)
   delay(5000);
@@ -92,41 +90,38 @@ void setup() {
   //lights.setup();
   //lights.on();
 
-  status = MODE_PARKED;
+  status = MODE_PARKED; //set initial status to PARKED
 
-
-  attachInterrupt(digitalPinToInterrupt(interruptPin), onInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), onInterrupt, FALLING); //attach interrupt to pin 9
 }
 
 void loop() {
-  //handle interrupt
+  //first, handle interrupt if triggered
   if (interruptTriggered){
     interruptTriggered=false;
-    isMoving = accel.isMoving();
-    //isMoving = true;
-    detectCard = rfid.detectCard();
-    if(isMoving){
+    isMoving = accel.isMoving(); //check if accelerometer triggered interrupt (motion detected)
+    detectCard = rfid.detectCard(); //check if RFID scanner triggered interrupt (card detected)
+    if(isMoving){ //accelerometer triggered interrupt
       lastMotionTime = millis();
-      light_val = analogRead(ldr);
+      light_val = analogRead(ldr); //read ambient light value from ldr
       #ifdef DEBUG
       Serial.println("Movement");
       Serial.println(light_val);
       #endif
-      if (isLocked) {
+      if (isLocked) { //trigger alarm if bike is locked and moved
         status = MODE_ALARM;
         #ifdef DEBUG
         Serial.println("Locked bike was moved! Alarm ON.");
         #endif
       }
-      else if (!isLocked && status == MODE_PARKED && light_val < light_threshold) {
-        lights.on();
+      else{ //if bike is not locked, mode is ACTIVE
         status = MODE_ACTIVE;
         #ifdef DEBUG
-        Serial.println("Motion detected at night - ACTIVE mode.");
+        Serial.println("Motion detected - ACTIVE mode.");
         #endif
       }
     }
-    if(detectCard){
+    if(detectCard){ //RFID scanner triggered interrupt
       #ifdef DEBUG
       Serial.println("Card");
       #endif
@@ -149,15 +144,16 @@ void loop() {
       }
     }
     delay(10); // Let IRQ line settle before checking if it is button
-    if (!isMoving && !detectCard && !(digitalRead(interruptPin))) { //is button
+    if (!isMoving && !detectCard && !(digitalRead(interruptPin))) { //button triggered interrupt
       #ifdef DEBUG
       Serial.println("Button");
       #endif
-      lights.toggle();
+      lights.toggle(); //turn lights on/off with button press
     }
   }
-    // --- Sleep in Storage Mode ---
-  if (status == MODE_PARKED && !isMoving) {
+
+  //next, check if device should go to sleep 
+  if ((status == MODE_PARKED && !isMoving) || (status == MODE_STORAGE)) {
     #ifdef DEBUG
     Serial.println("Entering deep sleep mode");
     #endif
@@ -165,27 +161,29 @@ void loop() {
     //esp_deep_sleep_start();
   }
 
+  //if not sleep mode, collect+send updated status data via LoRa
   else{
-    // if not sleep mode, collect new inputs and send Lora update
-    percentage = battery.getBatteryPercent();
-
-    // --- Active Mode ---
-    if (status == MODE_ACTIVE) {
+    if (status == MODE_ACTIVE) { //if bike is in active mode, check if it is still moving
       delay(50);
       Serial.println(millis() - lastMotionTime);
       if (millis() - lastMotionTime > 30000) { //auto turn off if not moved in 30 seconds
         status = MODE_PARKED;
         isMoving = false;
+        lights.off();
         #ifdef DEBUG
         Serial.println("No motion, switching to PARKED mode.");
         #endif
       }
-      if (analogRead(ldr) < light_threshold){
-        lights.on();
+      else{ //if bike is still moving, turn on/off lights on if it is dark
+        if (analogRead(ldr) < light_threshold){
+          lights.on();
+        }
+        else{ //turn lights off if daylight to save power
+          lights.off();
+        }
       }
     }
-
-    // --- Alarm Mode ---
+    //if alarm activated, activate buzzer
     if (status == MODE_ALARM) {
       tone(buzzer, 1000);
     } 
@@ -193,11 +191,12 @@ void loop() {
       noTone(buzzer);
     }
 
-    // --- Battery Warning ---
+    // if battery percentage is low, activate buzzer
     if (percentage < 20) {
       tone(buzzer, 2000, 200);
     }
 
+    percentage = battery.getBatteryPercent(); //get battery percentage
     // --- Lora Send ---
     //lora_send(status, percentage);
 
