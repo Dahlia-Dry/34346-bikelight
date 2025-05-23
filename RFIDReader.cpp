@@ -1,3 +1,10 @@
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 1
+* Code file for RFID card reader functions
+*/
+
 #include "RFIDReader.h"
 #include <SPI.h>
 
@@ -14,6 +21,7 @@ void RFIDReader::setup() {
     Serial.println("Ready to read card\n");
 }
 
+/* read ID of card */
 String RFIDReader::readUID() {
     String content = "";
     for (byte i = 0; i < mfrc522.uid.size; i++) {
@@ -24,6 +32,7 @@ String RFIDReader::readUID() {
     return content.substring(1);
 }
 
+/*detect if card is in field */
 bool RFIDReader::detectCard(){
   if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
         return false;
@@ -33,6 +42,7 @@ bool RFIDReader::detectCard(){
   }
 }
 
+/*check read UID against known key UIDs */
 bool RFIDReader::checkAccess(const String& allowedUID1, const String& allowedUID2) {
     Serial.print("UID tag:");
     String uid = readUID();

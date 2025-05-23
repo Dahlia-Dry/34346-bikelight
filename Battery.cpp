@@ -1,3 +1,10 @@
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 1
+* Code file for Adafruit MAX17048 Battery gauge functions
+*/
+
 #include "Battery.h"
 
 void Battery::setup() {
@@ -13,7 +20,7 @@ void Battery::setup() {
 }
 
 char Battery::getBatteryPercent() {
-    float percent = maxlipo.cellPercent();
+    float percent = maxlipo.cellPercent(); //get the battery percentage from the MAX17048
 
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;

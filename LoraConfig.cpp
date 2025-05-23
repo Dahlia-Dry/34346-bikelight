@@ -1,3 +1,12 @@
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 1
+* Code file for LoRaWAN communication functions
+* Based on Heltec ESP32 Dev-Boards library examples LoRaWAN.ino and LoRaWANDownlinkDataHandle.ino:
+* https://github.com/HelTecAutomation/CubeCell-Arduino/tree/master/libraries/LoRa/examples/LoRaWAN
+*/
+
 #include "LoraConfig.h"
 #include <iostream>
 #include <cstring>
@@ -6,14 +15,12 @@ using namespace std;
 
 #define INT_PIN 3
 
+//OTAA parameters
 uint8_t devEui[] = { 0x00, 0x04, 0xA3, 0x0B, 0x01, 0x06, 0x8C, 0xD7 };
 uint8_t appEui[] = {0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x07, 0x01, 0x2B};
 uint8_t appKey[] = { 0xA7, 0x82, 0x2A, 0xF3, 0x38, 0xBE, 0x81, 0x67, 0xFC, 0x2B, 0xB0, 0x99, 0x24, 0x23, 0x02, 0x10};
 
-uint8_t nwkSKey[] = { 0x15, 0xb1, 0xd0, 0xef, 0xa4, 0x63, 0xdf, 0xbe, 0x3d, 0x11, 0x18, 0x1e, 0x1e, 0xc7, 0xda, 0x85 };
-uint8_t appSKey[] = { 0xd7, 0x2c, 0x78, 0x75, 0x8c, 0xdc, 0xca, 0xbf, 0x55, 0xee, 0x4a, 0x77, 0x8d, 0x16, 0xef, 0x67 };
-uint32_t devAddr =  (uint32_t)0x007e6ae1;
-
+//LoRAWAN parameters
 uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 DeviceClass_t loraWanClass = CLASS_A;
@@ -122,6 +129,8 @@ String collect_wifi_data(void) {
     return ret;
 }
 
+/*function to send a tx frame via LoRaWAN*/
+/* must be called repeatedly to cycle through state machine */
 void lora_send(char status, char percentage) {
     switch (deviceState) {
           case DEVICE_STATE_INIT:
@@ -176,6 +185,7 @@ void lora_send(char status, char percentage) {
       }
 }
 
+/* function to fetch downlink messages via LoRaWAN */
 void downLinkDataHandle(McpsIndication_t *mcpsIndication)
 {
   Serial.printf("+REV DATA:%s,RXSIZE %d,PORT %d\r\n",mcpsIndication->RxSlot?"RXWIN2":"RXWIN1",mcpsIndication->BufferSize,mcpsIndication->Port);

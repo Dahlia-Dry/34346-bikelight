@@ -1,3 +1,10 @@
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 1
+* Header file for LoRaWAN communication functions
+*/
+
 #ifndef LORA_CONFIG_H
 #define LORA_CONFIG_H
 

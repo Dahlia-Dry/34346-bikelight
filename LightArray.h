@@ -1,3 +1,10 @@
+/*
+* Beam Buddy : IoT-Enabled Smart Bike Light
+* 34346 - Networking Technologies and Application Development for IoT, Spring 2025
+* Group 1
+* Header file for bike light LED array functions
+*/
+
 #ifndef LIGHTARRAY_H
 #define LIGHTARRAY_H
 

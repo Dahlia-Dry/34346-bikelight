@@ -1,7 +1,7 @@
 /*
 * Beam Buddy : IoT-Enabled Smart Bike Light
 * 34346 - Networking Technologies and Application Development for IoT, Spring 2025
-* Group 2
+* Group 1
 * Main code for Heltec HT-CT62 development board
 */
 
