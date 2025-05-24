@@ -30,7 +30,9 @@ Accelerometer::~Accelerometer() {
 
 void Accelerometer::setup() {
     D_SerialBegin(115200);
+    #ifdef DEBUG
     while (!Serial) delay(10);
+    #endif
 
     D_println("Adafruit MPU6050 test!");
 
@@ -41,7 +43,7 @@ void Accelerometer::setup() {
 
     D_println("MPU6050 Found!");
 
-    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
+    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ); 
     mpu.setMotionDetectionThreshold(20);    // LSB = 2mg of force
     mpu.setMotionDetectionDuration(80);    // LSB = 1ms of continous force
     Wire.beginTransmission(0x68);
@@ -56,5 +58,5 @@ void Accelerometer::setup() {
 }
 
 bool Accelerometer::isMoving() {
-    return mpu.getMotionInterruptStatus();
+    return mpu.getMotionInterruptStatus();  // Get status of interrupt
 }

@@ -212,6 +212,7 @@ void loop() {
       }
     }
   }
+  
   //if alarm activated, activate buzzer
   if (status == MODE_ALARM) {
     pinMode(buzzer, OUTPUT);
